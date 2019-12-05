@@ -12,13 +12,15 @@ namespace CheckNetwork
 {
     class CheckNetworkAddress
     {
-        private IPAddress[] _ipAddresses = null;
+        private List<byte[]> _ipAddressBytesList = null;
 
         /// <summary>
         /// コンストラクタ呼び出しでIPアドレスを取得
         /// </summary>
         public CheckNetworkAddress()
         {
+            _ipAddressBytesList = new List<byte[]>();
+
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
@@ -26,9 +28,13 @@ namespace CheckNetwork
                 {
                     continue;
                 }
-                _ipAddresses = nic.GetIPProperties().UnicastAddresses.
+                IPAddress[] ipAddresses = nic.GetIPProperties().UnicastAddresses.
                     Where(x => x.Address.AddressFamily == AddressFamily.InterNetwork).
                     Select(x => x.Address).ToArray();
+                foreach (IPAddress ipAddress in ipAddresses)
+                {
+                    _ipAddressBytesList.Add(ipAddress.GetAddressBytes());
+                }
             }
         }
 
@@ -49,7 +55,7 @@ namespace CheckNetwork
         /// <param name="networkAddress"></param>
         /// <param name="networkAddresses"></param>
         /// <returns></returns>
-        public bool IsMAtch(string networkAddress, params string[] networkAddresses)
+        public bool IsMatch(string networkAddress, params string[] networkAddresses)
         {
             List<string> tempList = new List<string>(networkAddresses);
             tempList.Insert(0, networkAddress);
@@ -70,53 +76,32 @@ namespace CheckNetwork
             foreach (string networkAddress in networkAddresses)
             {
                 if (string.IsNullOrEmpty(networkAddress)) { continue; }
-                if (reg_nwaddr.IsMatch(networkAddress))
+                foreach (string address in reg_comma.Split(networkAddress))
                 {
-                    string networkAddr = networkAddress.Substring(0, networkAddress.IndexOf("/"));
-                    string subnetMask = networkAddress.Substring(networkAddress.IndexOf("/") + 1);
-
-                    byte[] ntwBytes = IPAddress.Parse(networkAddr).GetAddressBytes();
-                    byte[] maskBytes = int.TryParse(subnetMask, out int tempInt) ?
-                        BitConverter.GetBytes(~(uint.MaxValue >> tempInt)).Reverse().ToArray() :
-                        IPAddress.Parse(subnetMask).GetAddressBytes();
-
-
-                }
-            }
-
-            return true;
-
-        }
-
-
-
-        private void test()
-        {
-            /*
-            Console.WriteLine(nic.Name);
-
-            byte[] networkAddr = IPAddress.Parse("192.168.151.0").GetAddressBytes();
-            byte[] subnetMask = IPAddress.Parse("255.255.255.0").GetAddressBytes();
-
-
-
-            foreach (UnicastIPAddressInformation ip in nic.GetIPProperties().UnicastAddresses)
-            {
-                if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    byte[] ipAddr = ip.Address.GetAddressBytes();
-
-                    if ((networkAddr[0] & subnetMask[0]) == (ipAddr[0] & subnetMask[0]) &&
-                        (networkAddr[1] & subnetMask[1]) == (ipAddr[1] & subnetMask[1]) &&
-                        (networkAddr[2] & subnetMask[2]) == (ipAddr[2] & subnetMask[2]) &&
-                        (networkAddr[3] & subnetMask[3]) == (ipAddr[3] & subnetMask[3]))
+                    if (reg_nwaddr.IsMatch(address))
                     {
-                        Console.WriteLine("●");
-                        Console.WriteLine(ip.Address);
+                        string networkAddr = networkAddress.Substring(0, networkAddress.IndexOf("/"));
+                        string subnetMask = networkAddress.Substring(networkAddress.IndexOf("/") + 1);
+
+                        byte[] networkAddressBytes = IPAddress.Parse(networkAddr).GetAddressBytes();
+                        byte[] subnetMaskBytes = int.TryParse(subnetMask, out int tempInt) ?
+                            BitConverter.GetBytes(~(uint.MaxValue >> tempInt)).Reverse().ToArray() :
+                            IPAddress.Parse(subnetMask).GetAddressBytes();
+
+                        foreach (byte[] ipAddressBytes in _ipAddressBytesList)
+                        {
+                            if ((networkAddressBytes[0] & subnetMaskBytes[0]) == (ipAddressBytes[0] & subnetMaskBytes[0]) &&
+                                (networkAddressBytes[1] & subnetMaskBytes[1]) == (ipAddressBytes[1] & subnetMaskBytes[1]) &&
+                                (networkAddressBytes[2] & subnetMaskBytes[2]) == (ipAddressBytes[2] & subnetMaskBytes[2]) &&
+                                (networkAddressBytes[3] & subnetMaskBytes[3]) == (ipAddressBytes[3] & subnetMaskBytes[3]))
+                            {
+                                return true;
+                            }
+                        }
                     }
                 }
             }
-            */
+            return false;
         }
     }
 }

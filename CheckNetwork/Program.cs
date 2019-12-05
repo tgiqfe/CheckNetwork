@@ -15,10 +15,11 @@ namespace CheckNetwork
             string sourceText = "aaaa, bbbb, cccc";
             Console.WriteLine(check.IsMatch(sourceText));
             */
-
+            /*
             CheckNetworkAddress checkNW = new CheckNetworkAddress();
-
-
+            bool result = checkNW.IsMatch("192.168.151.129/255.255.255.128");
+            Console.WriteLine(result);
+            */
             Console.ReadLine();
         }
     }
