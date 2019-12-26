@@ -45,7 +45,8 @@ namespace CheckNetwork
         /// <returns></returns>
         public bool IsMatch(string networkAddress)
         {
-            return IsMatch(new string[1] { networkAddress });
+            Regex reg_comma = new Regex(@",\s*");
+            return IsMatch(reg_comma.Split(networkAddress));
         }
 
         /// <summary>
@@ -59,7 +60,18 @@ namespace CheckNetwork
         {
             List<string> tempList = new List<string>(networkAddresses);
             tempList.Insert(0, networkAddress);
-            return IsMatch(tempList.ToArray());
+            return IsMatch(tempList);
+        }
+
+        /// <summary>
+        /// ネットワークアドレスと一致チェック
+        /// 引数List<string>で待ち受け
+        /// </summary>
+        /// <param name="networkAddresses"></param>
+        /// <returns></returns>
+        public bool IsMatch(List<string> networkAddresses)
+        {
+            return IsMatch(networkAddresses.ToArray());
         }
 
         /// <summary>
