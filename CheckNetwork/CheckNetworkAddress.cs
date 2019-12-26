@@ -13,6 +13,7 @@ namespace CheckNetwork
     class CheckNetworkAddress
     {
         private List<byte[]> _ipAddressBytesList = null;
+        private List<string> _ipAddressStringList = null;
 
         /// <summary>
         /// コンストラクタ呼び出しでIPアドレスを取得
@@ -20,6 +21,7 @@ namespace CheckNetwork
         public CheckNetworkAddress()
         {
             _ipAddressBytesList = new List<byte[]>();
+            _ipAddressStringList = new List<string>();
 
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
@@ -34,6 +36,7 @@ namespace CheckNetwork
                 foreach (IPAddress ipAddress in ipAddresses)
                 {
                     _ipAddressBytesList.Add(ipAddress.GetAddressBytes());
+                    _ipAddressStringList.Add(ipAddress.ToString());
                 }
             }
         }
@@ -92,6 +95,7 @@ namespace CheckNetwork
                 {
                     if (reg_nwaddr.IsMatch(address))
                     {
+                        //  192.168.1.0/24 ←の形式でチェック
                         string networkAddr = networkAddress.Substring(0, networkAddress.IndexOf("/"));
                         string subnetMask = networkAddress.Substring(networkAddress.IndexOf("/") + 1);
 
@@ -106,6 +110,29 @@ namespace CheckNetwork
                                 (networkAddressBytes[1] & subnetMaskBytes[1]) == (ipAddressBytes[1] & subnetMaskBytes[1]) &&
                                 (networkAddressBytes[2] & subnetMaskBytes[2]) == (ipAddressBytes[2] & subnetMaskBytes[2]) &&
                                 (networkAddressBytes[3] & subnetMaskBytes[3]) == (ipAddressBytes[3] & subnetMaskBytes[3]))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    else if (address.Contains("*"))
+                    {
+                        //  ワイルドカードでチェック
+                        string patternString = Regex.Replace(address, ".",
+                        x =>
+                        {
+                            string y = x.Value;
+                            if (y.Equals("?")) { return "\\."; }
+                            else if (y.Equals("*")) { return ".*"; }
+                            else { return Regex.Escape(y); }
+                        });
+                        if (!patternString.StartsWith("*")) { patternString = "^" + patternString; }
+                        if (!patternString.EndsWith("*")) { patternString = patternString + "$"; }
+                        Regex tempReg = new Regex(patternString, RegexOptions.IgnoreCase);
+
+                        foreach (string ipAddressString in _ipAddressStringList)
+                        {
+                            if (tempReg.IsMatch(ipAddressString))
                             {
                                 return true;
                             }
