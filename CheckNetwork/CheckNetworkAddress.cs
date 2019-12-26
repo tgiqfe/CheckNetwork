@@ -14,6 +14,8 @@ namespace CheckNetwork
     {
         private List<byte[]> _ipAddressBytesList = null;
         private List<string> _ipAddressStringList = null;
+        public List<byte[]> IPAddressBytesList { get { return this._ipAddressBytesList; } }
+        public List<string> IPAddressStringList { get { return this._ipAddressStringList; } }
 
         /// <summary>
         /// コンストラクタ呼び出しでIPアドレスを取得
